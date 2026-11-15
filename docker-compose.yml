@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: alumni
+      POSTGRES_USER: alumni
+      POSTGRES_PASSWORD: alumni
+    ports:
+      - "5433:5432"
+    volumes:
+      - alumni-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alumni -d alumni"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # The API itself. Started only with: docker compose --profile app up -d --build
+  app:
+    profiles: ["app"]
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/alumni
+      DB_USERNAME: alumni
+      DB_PASSWORD: alumni
+      PHANTOMBUSTER_MOCK: ${PHANTOMBUSTER_MOCK:-false}
+      PHANTOMBUSTER_API_KEY: ${PHANTOMBUSTER_API_KEY:-}
+      PHANTOMBUSTER_AGENT_ID: ${PHANTOMBUSTER_AGENT_ID:-}
+      LINKEDIN_SESSION_COOKIE: ${LINKEDIN_SESSION_COOKIE:-}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
+volumes:
+  alumni-pgdata:
